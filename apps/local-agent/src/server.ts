@@ -50,6 +50,9 @@ app.addHook("onSend", async (request, reply, payload) => {
     reply.header("Access-Control-Allow-Private-Network", "true");
   return payload;
 });
+app.addHook("onRequest", async (request) => {
+  console.log(`[DBCompare] ${request.method} ${request.url}`);
+});
 
 function bearerToken(request: FastifyRequest) {
   const token = request.headers.authorization?.replace(/^Bearer\s+/i, "");
@@ -151,3 +154,9 @@ app.post("/api/comparisons/webservices", async (request, reply) => {
 });
 
 await app.listen({ port: localPort, host: "127.0.0.1" });
+console.log("");
+console.log("========================================");
+console.log(" Agente DBCompare iniciado com sucesso");
+console.log(` Endereço local: http://127.0.0.1:${localPort}`);
+console.log(" Aguardando solicitações do navegador...");
+console.log("========================================");
