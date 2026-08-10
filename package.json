@@ -1,0 +1,11 @@
+{
+  "name": "db-compare",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "npm run dev -w @dbcompare/web",
+    "dev:api": "npm run dev -w @dbcompare/api",
+    "build": "npm run build -w @dbcompare/web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

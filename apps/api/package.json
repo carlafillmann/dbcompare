@@ -1,0 +1,17 @@
+{
+  "name": "@dbcompare/api",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "tsx watch --env-file=.env src/server.ts", "start": "tsx --env-file=.env src/server.ts", "seed:admin": "tsx --env-file=.env src/seed-admin.ts", "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "@fastify/rate-limit": "^10.2.0",
+    "fastify": "^5.2.0",
+    "firebase-admin": "^13.0.0",
+    "mssql": "^11.0.1",
+    "oracledb": "^6.7.0",
+    "pg": "^8.13.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": { "@types/node": "^22.10.2", "tsx": "^4.19.2", "typescript": "^5.7.2" }
+}
