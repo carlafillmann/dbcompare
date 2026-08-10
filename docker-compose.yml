@@ -26,5 +26,22 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - web
+    restart: unless-stopped
+    environment:
+      DOMAIN_NAME: ${DOMAIN_NAME:-dbcompare.duckdns.org}
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
