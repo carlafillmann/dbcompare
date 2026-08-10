@@ -654,71 +654,16 @@ function UsersModal({
   embedded?: boolean;
 }) {
   const [users, setUsers] = useState<any[]>([]),
-    [form, setForm] = useState({
-      name: "",
-      username: "",
-      password: "",
-      role: "common",
-    }),
-    [editing, setEditing] = useState<any | null>(null),
     [message, setMessage] = useState("");
   const load = () =>
-    requestGet("/users", user)
-      .then((data) => setUsers(data.users))
-      .catch((error) => setMessage(error.message));
+    getDocs(query(collection(firestore, "users"), orderBy("name")))
+      .then((snapshot) =>
+        setUsers(snapshot.docs.map((item) => ({ uid: item.id, ...item.data() }))),
+      )
+      .catch(() => setMessage("Não foi possível carregar os perfis do Firestore."));
   useEffect(() => {
     load();
   }, []);
-  async function create() {
-    try {
-      await requestApi("/users", user, form);
-      setMessage("Usuário cadastrado com sucesso.");
-      setForm({ name: "", username: "", password: "", role: "common" });
-      load();
-    } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível cadastrar o usuário.",
-      );
-    }
-  }
-  async function persist() {
-    try {
-      if (editing) {
-        const update = form.password ? form : { ...form, password: undefined };
-        await requestApi(`/users/${editing.uid}`, user, update, "PATCH");
-      }
-      else await requestApi("/users", user, form);
-      setMessage(editing ? "Usuário atualizado com sucesso." : "Usuário cadastrado com sucesso.");
-      setEditing(null);
-      setForm({ name: "", username: "", password: "", role: "common" });
-      load();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Não foi possível salvar o usuário.";
-      if (editing)
-        await requestApi("/audit", user, {
-          operation: "Alteração de usuário",
-          connection: `Usuário: ${form.username}`,
-          errorMessage,
-        }).catch(() => undefined);
-      setMessage(errorMessage);
-    }
-  }
-  async function removeUser(item: any) {
-    if (!window.confirm(`Excluir o usuário “${item.name}”?`)) return;
-    try {
-      await requestApi(`/users/${item.uid}`, user, {}, "DELETE");
-      setMessage("Usuário excluído com sucesso.");
-      if (editing?.uid === item.uid) {
-        setEditing(null);
-        setForm({ name: "", username: "", password: "", role: "common" });
-      }
-      load();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível excluir o usuário.");
-    }
-  }
   return (
     <div className={embedded ? "page-tab users-tab" : "backdrop"}>
       <section className={embedded ? "users-page" : "modal users-modal"}>
@@ -727,6 +672,7 @@ function UsersModal({
         </button>
         <p className="eyebrow">USUÁRIOS</p>
         <h2>Cadastro de usuários</h2>
+        <p className="muted">A manutenção é realizada pelo Firebase Console. Esta tela é somente para consulta.</p>
         <div className="saved-connections">
           <b>Usuários existentes</b>
           <table>
@@ -745,22 +691,10 @@ function UsersModal({
                   <td>{item.username || item.email}</td>
                   <td>{item.role === "admin" ? "Administrador" : "Comum"}</td>
                   <td>
-                    <button
-                      className="outline mini"
-                      onClick={() => {
-                        setEditing(item);
-                        setForm({
-                          name: item.name,
-                          username: item.username || item.email?.split("@")[0] || "",
-                          password: "",
-                          role: item.role,
-                        });
-                        setMessage("");
-                      }}
-                    >
+                    <button className="outline mini" disabled>
                       Editar
                     </button>
-                    <button className="danger mini" onClick={() => removeUser(item)}>
+                    <button className="danger mini" disabled>
                       Excluir
                     </button>
                   </td>
@@ -773,34 +707,19 @@ function UsersModal({
         <div className="fields">
           <label>
             Nome
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
+            <input disabled />
           </label>
           <label>
             Login
-            <input
-              value={form.username}
-              onChange={(e) =>
-                setForm({ ...form, username: e.target.value.toUpperCase() })
-              }
-            />
+            <input disabled />
           </label>
           <label>
-            Senha {editing && <span>Deixe em branco para manter a atual</span>}
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
+            Senha
+            <input type="password" disabled />
           </label>
           <label>
             Tipo
-            <select
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-            >
+            <select disabled>
               <option value="common">Comum</option>
               <option value="admin">Administrador</option>
             </select>
@@ -811,10 +730,9 @@ function UsersModal({
           <span />
           <button
             className="primary"
-            disabled={!form.name || !form.username || (!editing && form.password.length < 8) || (editing && !!form.password && form.password.length < 8)}
-            onClick={persist}
+            disabled
           >
-            {editing ? "Salvar alterações" : "Cadastrar usuário"}
+            Novo usuário
           </button>
         </footer>
       </section>
@@ -1273,6 +1191,11 @@ function App({ user }: { user: User }) {
             <Settings /> Configurações
           </a>
           {admin && (
+            <a className={page === "users" ? "active" : ""} onClick={() => setPage("users")}>
+              <Users /> Usuários
+            </a>
+          )}
+          {admin && (
             <a className={page === "monitoring" ? "active" : ""} onClick={() => setPage("monitoring")}>
               <ClipboardList /> Monitoramento
             </a>
@@ -1307,6 +1230,9 @@ function App({ user }: { user: User }) {
             ignoredParameters={ignoredParameters}
             setIgnoredParameters={setIgnoredParameters}
           />
+        )}
+        {page === "users" && admin && (
+          <UsersModal user={user} close={() => setPage("compare")} embedded />
         )}
         {page === "compare" && <>
         <header>

@@ -5,7 +5,7 @@ service cloud.firestore {
     function admin() { return signedIn() && request.auth.token.role == 'admin'; }
 
     match /users/{userId} {
-      allow read: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || admin());
       allow update: if signedIn() && request.auth.uid == userId
         && request.resource.data.role == resource.data.role;
       allow create, delete: if admin();
