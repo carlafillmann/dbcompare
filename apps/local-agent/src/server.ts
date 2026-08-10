@@ -76,6 +76,8 @@ function messageOf(error: unknown, passwords: string[] = []) {
   return message.slice(0, 700);
 }
 
+app.get("/health", async () => ({ ok: true }));
+
 app.post("/api/connections/test", async (request, reply) => {
   const connection = connectionSchema.parse(request.body);
   await requireAuthenticated(request);

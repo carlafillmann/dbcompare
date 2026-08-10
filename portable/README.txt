@@ -3,6 +3,9 @@ DB Compare - Versao local/portatil
 
 Esta pasta sera a distribuicao para os usuarios Windows.
 
+Use sempre a pasta cujo nome termina em `-windows-local`. Pastas anteriores
+nao possuem a configuracao atual do agente local.
+
 Ao finalizar o empacotamento, ela contera:
 - runtime\node.exe: runtime incluido, sem necessidade de instalar Node.js;
 - agent\: servidor local que executa as consultas aos bancos;
