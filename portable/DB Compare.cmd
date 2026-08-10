@@ -10,4 +10,4 @@ if not exist "%APP_ROOT%runtime\node.exe" (
 
 start "DB Compare" /D "%APP_ROOT%agent" "%APP_ROOT%runtime\node.exe" --env-file=.env dist\server.js
 timeout /t 2 /nobreak >nul
-start "" http://127.0.0.1:38765
+start "" https://dbcompare-d1bc2.web.app

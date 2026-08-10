@@ -6,6 +6,7 @@
     "dev": "npm run dev -w @dbcompare/web",
     "dev:api": "npm run dev -w @dbcompare/api",
     "build": "npm run build -w @dbcompare/web",
+    "build:firebase": "npm run build -w @dbcompare/web -- --mode firebase",
     "build:portable": "npm run build -w @dbcompare/api && npm run build -w @dbcompare/local-agent && npm run build -w @dbcompare/web -- --mode portable",
     "package:portable": "node scripts/package-portable.mjs",
     "start:portable": "npm run start -w @dbcompare/local-agent",

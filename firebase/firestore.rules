@@ -17,7 +17,12 @@ service cloud.firestore {
 
     match /operationLogs/{logId} {
       allow read: if admin();
-      allow write: if false;
+      allow create: if signedIn()
+        && request.resource.data.actor.uid == request.auth.uid
+        && request.resource.data.operation is string
+        && request.resource.data.status in ['success', 'error']
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
     }
   }
 }

@@ -7,11 +7,11 @@ import { resolve, join } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
-const configuredUrl = args.find((item) => item.startsWith("--control-api="))?.slice("--control-api=".length);
+const configuredApiKey = args.find((item) => item.startsWith("--firebase-api-key="))?.slice("--firebase-api-key=".length);
 const skipBuild = args.includes("--skip-build");
-const controlApiUrl = configuredUrl || "__INFORME_A_URL_HTTPS_DA_API_CENTRAL__";
+const firebaseApiKey = configuredApiKey || "__INFORME_A_CHAVE_PUBLICA_DO_FIREBASE__";
 const version = JSON.parse(await readFile(join(root, "package.json"), "utf8")).version ?? "1.0.0";
-const bundle = resolve(root, "release", `DBCompare-${version}-windows`);
+const bundle = resolve(root, "release", `DBCompare-${version}-windows-local`);
 const nodeVersion = process.versions.node;
 const nodeArchive = `node-v${nodeVersion}-win-x64.zip`;
 const nodeUrl = `https://nodejs.org/dist/v${nodeVersion}/${nodeArchive}`;
@@ -45,16 +45,15 @@ function download(url, destination) {
 
 if (!skipBuild) runNpm(["run", "build:portable"]);
 await mkdir(bundle, { recursive: true });
-await cp(join(root, "apps", "web", "dist"), join(bundle, "web"), { recursive: true });
 await cp(join(root, "apps", "local-agent", "dist"), join(bundle, "agent", "dist"), { recursive: true });
 await cp(join(root, "portable", "DB Compare.cmd"), join(bundle, "DB Compare.cmd"));
 await cp(join(root, "portable", "README.txt"), join(bundle, "README.txt"));
 
 await mkdir(join(bundle, "agent"), { recursive: true });
 await writeFile(join(bundle, "agent", ".env"), [
-  `CONTROL_API_URL=${controlApiUrl}`,
+  `FIREBASE_API_KEY=${firebaseApiKey}`,
   "LOCAL_PORT=38765",
-  "WEB_DIST_PATH=../web",
+  "ALLOWED_ORIGINS=https://dbcompare-d1bc2.web.app,https://dbcompare-d1bc2.firebaseapp.com",
   "",
 ].join("\r\n"));
 
@@ -64,7 +63,7 @@ await writeFile(join(bundle, "package.json"), JSON.stringify({
   private: true,
   type: "module",
   dependencies: {
-    "@fastify/static": "^8.1.1",
+    "@fastify/cors": "^11.0.0",
     fastify: "^5.2.0",
     mssql: "^11.0.1",
     oracledb: "^6.7.0",

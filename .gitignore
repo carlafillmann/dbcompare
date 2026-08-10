@@ -3,7 +3,9 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.firebase
 *.log
 serviceAccountKey.json
 secrets/
 release/
+.firebase/

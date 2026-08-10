@@ -13,9 +13,12 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   orderBy,
   query,
+  serverTimestamp,
   setDoc,
+  startAfter,
   updateDoc,
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
@@ -78,6 +81,28 @@ type LoginFloat = {
 // No desenvolvimento e na versão web, VITE_API_URL continua podendo apontar
 // para uma API externa.
 const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
+
+async function writeAudit(
+  user: User,
+  payload: { operation: string; connection?: string; errorMessage?: string },
+) {
+  const token = await user.getIdTokenResult();
+  await addDoc(collection(firestore, "operationLogs"), {
+    operation: payload.operation,
+    actor: {
+      uid: user.uid,
+      username: token.claims.username ?? user.email?.split("@")[0] ?? "Usuário",
+      name: user.displayName ?? user.email ?? "Usuário",
+    },
+    details: {
+      occurredAt: new Date().toISOString(),
+      ...(payload.connection ? { connection: payload.connection } : {}),
+    },
+    status: payload.errorMessage ? "error" : "success",
+    errorMessage: payload.errorMessage ?? null,
+    createdAt: serverTimestamp(),
+  });
+}
 const emptyConnection: Connection = {
   name: "",
   environment: "Homologação",
@@ -99,6 +124,10 @@ async function requestApi(
   body: unknown,
   method = "POST",
 ) {
+  if (path === "/audit") {
+    await writeAudit(user, body as { operation: string; connection?: string; errorMessage?: string });
+    return {};
+  }
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method,
     headers: {
@@ -404,6 +433,10 @@ function ConnectionModal({
         ...data,
         password,
       });
+      await requestApi("/audit", user, {
+        operation: "Teste de conexão",
+        connection: `${data.name} | ${data.type} | ${data.host}:${data.port} | base: ${data.database} | usuário: ${data.username}`,
+      }).catch(() => undefined);
       setMessage("");
       setReport({
         ok: true,
@@ -412,6 +445,11 @@ function ConnectionModal({
       });
     } catch (error) {
       const failure = error as Error & { payload?: TestReport };
+      await requestApi("/audit", user, {
+        operation: "Teste de conexão",
+        connection: `${data.name} | ${data.type} | ${data.host}:${data.port} | base: ${data.database} | usuário: ${data.username}`,
+        errorMessage: failure.message,
+      }).catch(() => undefined);
       setMessage("");
       setReport({
         ok: false,
@@ -827,22 +865,28 @@ function SettingsPage({
 }
 function MonitoringModal({ user, close, embedded = false }: { user: User; close: () => void; embedded?: boolean }) {
   const [logs, setLogs] = useState<any[]>([]),
-    [cursor, setCursor] = useState<string | null>(null),
+    [cursor, setCursor] = useState<any>(null),
     [filter, setFilter] = useState(""),
     [loading, setLoading] = useState(false);
-  async function load(next?: string | null) {
+  async function load(next?: any) {
     if (loading) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (next) params.set("cursor", next);
-      if (filter.trim()) params.set("q", filter.trim());
-      const data = await requestGet(
-        `/monitoring${params.size ? `?${params}` : ""}`,
-        user,
-      );
-      setLogs((current) => (next ? [...current, ...data.logs] : data.logs));
-      setCursor(data.nextCursor);
+      const source = collection(firestore, "operationLogs");
+      if (filter.trim()) {
+        const snapshot = await getDocs(query(source, orderBy("createdAt", "desc")));
+        const term = filter.trim().toLowerCase();
+        const all = snapshot.docs
+          .map((item) => ({ id: item.id, ...item.data(), createdAt: item.get("createdAt")?.toDate?.().toISOString() ?? null }))
+          .filter((item) => JSON.stringify(item).toLowerCase().includes(term));
+        setLogs(all);
+        setCursor(null);
+      } else {
+        const snapshot = await getDocs(query(source, orderBy("createdAt", "desc"), ...(next ? [startAfter(next)] : []), limit(100)));
+        const page = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), createdAt: item.get("createdAt")?.toDate?.().toISOString() ?? null }));
+        setLogs((current) => (next ? [...current, ...page] : page));
+        setCursor(snapshot.docs.length === 100 ? snapshot.docs.at(-1) : null);
+      }
     } finally {
       setLoading(false);
     }
@@ -1095,6 +1139,10 @@ function App({ user }: { user: User }) {
       };
       setResultsByType((current) => ({ system: systemData ? merge(systemData) : current.system, webservices: webservicesData ? merge(webservicesData) : current.webservices, features: featuresData ? merge(featuresData) : current.features }));
       setOperationLogs([...(systemData ? flattenLogs(systemData.logs) : []), ...(webservicesData ? flattenLogs(webservicesData.logs) : []), ...(featuresData ? flattenLogs(featuresData.logs) : [])]);
+      await requestApi("/audit", user, {
+        operation: "Consulta",
+        connection: `${first.name} | ${second.name}${webservicesOnly ? " | Webservices" : ""}`,
+      }).catch(() => undefined);
     } catch (error) {
       const failure = error as Error & {
         payload?: {
@@ -1225,11 +1273,6 @@ function App({ user }: { user: User }) {
             <Settings /> Configurações
           </a>
           {admin && (
-            <a className={page === "users" ? "active" : ""} onClick={() => setPage("users")}>
-              <Users /> Usuários
-            </a>
-          )}
-          {admin && (
             <a className={page === "monitoring" ? "active" : ""} onClick={() => setPage("monitoring")}>
               <ClipboardList /> Monitoramento
             </a>
@@ -1264,9 +1307,6 @@ function App({ user }: { user: User }) {
             ignoredParameters={ignoredParameters}
             setIgnoredParameters={setIgnoredParameters}
           />
-        )}
-        {page === "users" && admin && (
-          <UsersModal user={user} close={() => setPage("compare")} embedded />
         )}
         {page === "compare" && <>
         <header>
