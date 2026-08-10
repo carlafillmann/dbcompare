@@ -35,7 +35,8 @@ exit /b 1
 popd
 echo.
 echo Agente pronto. Abrindo o DB Compare no navegador...
-start "" https://dbcompare-d1bc2.web.app
+explorer.exe "https://dbcompare-d1bc2.web.app"
+if errorlevel 1 start "" "https://dbcompare-d1bc2.web.app"
 echo.
 echo O agente continuara ativo enquanto esta janela permanecer aberta.
 echo Os registros de atividade aparecerao abaixo.

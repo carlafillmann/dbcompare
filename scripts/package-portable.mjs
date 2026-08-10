@@ -9,6 +9,7 @@ const root = resolve(import.meta.dirname, "..");
 const args = process.argv.slice(2);
 const configuredApiKey = args.find((item) => item.startsWith("--firebase-api-key="))?.slice("--firebase-api-key=".length);
 const skipBuild = args.includes("--skip-build");
+const skipInstall = args.includes("--skip-install");
 const firebaseApiKey = configuredApiKey || "__INFORME_A_CHAVE_PUBLICA_DO_FIREBASE__";
 const version = JSON.parse(await readFile(join(root, "package.json"), "utf8")).version ?? "1.0.0";
 const bundle = resolve(root, "release", `DBCompare-${version}-windows-local`);
@@ -71,7 +72,7 @@ await writeFile(join(bundle, "package.json"), JSON.stringify({
     zod: "^3.24.1",
   },
 }, null, 2));
-runNpm(["install", "--omit=dev", "--no-audit", "--no-fund"], bundle);
+if (!skipInstall) runNpm(["install", "--omit=dev", "--no-audit", "--no-fund"], bundle);
 await mkdir(join(bundle, "node_modules", "@dbcompare", "api"), { recursive: true });
 await cp(join(root, "apps", "api", "dist"), join(bundle, "node_modules", "@dbcompare", "api", "dist"), { recursive: true });
 await cp(join(root, "apps", "api", "package.json"), join(bundle, "node_modules", "@dbcompare", "api", "package.json"));
