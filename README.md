@@ -22,3 +22,26 @@ Aplicação web para comparar parâmetros entre Oracle, SQL Server e PostgreSQL.
 - Nunca exponha portas, hosts ou senhas de banco ao bundle web.
 - Em produção, proteja a API com HTTPS, um proxy reverso, rate limiting e allowlist de redes/hosts de banco.
 - Configure as regras do Firestore em `firebase/firestore.rules` antes de publicar.
+
+## Versão local/portátil (em implementação)
+
+A versão portátil mantém as consultas de banco no computador do usuário, que
+normalmente já possui acesso à VPN corporativa. O navegador abre o sistema em
+`127.0.0.1`, enquanto Firebase e os recursos administrativos continuam na API
+central.
+
+- `apps/local-agent`: API local restrita a `127.0.0.1`, sem chave administrativa
+  do Firebase.
+- `portable/DB Compare.cmd`: iniciador que a distribuição Windows utilizará.
+- `portable/README.txt`: formato da pasta entregue aos usuários.
+
+Para desenvolvimento do agente, copie `apps/local-agent/.env.example` para
+`apps/local-agent/.env`, informe a URL HTTPS da API central e execute:
+
+```bash
+npm run build:portable
+npm run start:portable
+```
+
+O empacotamento final incluirá um runtime Node próprio, de modo que o usuário
+não precisará instalar Node.js nem configurar uma API local manualmente.

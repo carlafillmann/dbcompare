@@ -74,6 +74,10 @@ type LoginFloat = {
   y: number;
   transient?: boolean;
 };
+// A versão portátil é servida pelo agente local e usa a mesma origem.
+// No desenvolvimento e na versão web, VITE_API_URL continua podendo apontar
+// para uma API externa.
+const apiBaseUrl = import.meta.env.VITE_API_URL || "/api";
 const emptyConnection: Connection = {
   name: "",
   environment: "Homologação",
@@ -95,7 +99,7 @@ async function requestApi(
   body: unknown,
   method = "POST",
 ) {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${await user.getIdToken()}`,
@@ -109,7 +113,7 @@ async function requestApi(
   return result;
 }
 async function requestGet(path: string, user: User) {
-  const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     headers: { Authorization: `Bearer ${await user.getIdToken()}` },
   });
   const result = await response.json();

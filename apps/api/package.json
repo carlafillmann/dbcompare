@@ -2,7 +2,8 @@
   "name": "@dbcompare/api",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "tsx watch --env-file=.env src/server.ts", "start": "tsx --env-file=.env src/server.ts", "seed:admin": "tsx --env-file=.env src/seed-admin.ts", "typecheck": "tsc --noEmit" },
+  "scripts": { "dev": "tsx watch --env-file=.env src/server.ts", "start": "tsx --env-file=.env src/server.ts", "build": "tsc", "seed:admin": "tsx --env-file=.env src/seed-admin.ts", "typecheck": "tsc --noEmit" },
+  "exports": { "./database": "./dist/database.js" },
   "dependencies": {
     "@fastify/cors": "^11.0.0",
     "@fastify/rate-limit": "^10.2.0",

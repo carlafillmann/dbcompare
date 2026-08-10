@@ -80,6 +80,9 @@ async function audit(
 function isAdmin(request: any) {
   return request.authUser?.role === "admin";
 }
+// Used by the local agent. It validates a Firebase session without giving the
+// agent any administrative Firebase credential.
+app.get("/session/validate", async (_request, reply) => reply.code(204).send());
 app.post("/connections/test", async (request, reply) => {
   const connection = connectionSchema.parse(request.body);
   const logs: string[] = [];
@@ -229,6 +232,7 @@ app.post("/audit", async (request, reply) => {
         "Inclusão de conexão",
         "Alteração de conexão",
         "Exclusão de conexão",
+        "Teste de conexão",
       ]),
       connection: z.string().optional(),
       errorMessage: z.string().max(1000).optional(),
